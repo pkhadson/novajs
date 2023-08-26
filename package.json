@@ -1,0 +1,21 @@
+{
+  "name": "jsnova",
+  "version": "1.0.0-rc.1",
+  "description": "",
+  "main": "index.js",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 0",
+    "build": "tsc -b",
+    "dev": "node misc/run.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-cdk-lib": "^2.88.0",
+    "typescript": "^5.1.6"
+  }
+}
