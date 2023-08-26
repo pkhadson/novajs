@@ -1,6 +1,6 @@
 {
   "name": "@jsnova/core",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.3",
   "description": "",
   "main": "src/index.ts",
   "scripts": {
