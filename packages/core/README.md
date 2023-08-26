@@ -1,7 +1,6 @@
 <p align="center">
-    <img src="./assets/logo.svg" width="320" alt="NovaJS Logo" />
-    ![Termux Logo](https://user-images.githubusercontent.com/72879799/153904003-d7dee710-6552-4d23-a803-7a9a0ba67d92.png#gh-dark-mode-only)
-    ![Termux Logo](https://user-images.githubusercontent.com/72879799/153904095-9d78a019-8495-4035-8174-e3da8e4dd66b.png#gh-light-mode-only)
+    <img src="https://user-images.githubusercontent.com/72879799/153904003-d7dee710-6552-4d23-a803-7a9a0ba67d92.png#gh-dark-mode-only" width="320" alt="NovaJS Logo" />
+    <img src="https://user-images.githubusercontent.com/72879799/153904095-9d78a019-8495-4035-8174-e3da8e4dd66b.png#gh-light-mode-only" width="320" alt="NovaJS Logo" />
 </p>
 
   <p align="center">NovaJS is a new nodejs package for serverless API</p>
