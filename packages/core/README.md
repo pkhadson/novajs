@@ -63,53 +63,53 @@ To use `@jsnova/core`, you need to have Node.js and npm installed on your machin
 
 ## Creating an app
 
-    javascript
-    (async  ()  =>  {
-	    NovaFactory.create({
-		    cors:  true,
-		    port:  3000,
-		    controllers: [UserController],
-		    region:  "us-east-1",
-		    use: [
-			    useAtlas({
-				    apiKey:  getEnv("ATLAS_API_KEY"),
-				    appId:  getEnv("ATTLAS_APP_ID"),
-				    database:  "test_a",
-				    region:  "us-east-1.aws",
-				    dataSource:  "dev-hml",
-				}),
-			],
-		});
-	})();
-
+```ts
+(async  ()  =>  {
+	NovaFactory.create({
+	    cors:  true,
+	    port:  3000,
+	    controllers: [UserController],
+	    region:  "us-east-1",
+	    use: [
+		    useAtlas({
+			    apiKey:  getEnv("ATLAS_API_KEY"),
+			    appId:  getEnv("ATTLAS_APP_ID"),
+			    database:  "test_a",
+			    region:  "us-east-1.aws",
+			    dataSource:  "dev-hml",
+			}),
+		],
+	});
+})();
+```
 
 ## Creating an controller
+```ts
+import  { InsertOne }  from  "@jsnova/atlas";
+import  { Controller, Post }  from  "@jsnova/core";
+import  { UseModel }  from  "@jsnova/model-validator";
+import  { UserDto }  from  "../models/user.model";
 
-    typescript
-    import  { InsertOne }  from  "@jsnova/atlas";
-    import  { Controller, Post }  from  "@jsnova/core";
-    import  { UseModel }  from  "@jsnova/model-validator";
-    import  { UserDto }  from  "../models/user.model";
-    
-    @Controller("user")
-    class  UserController  {
-	    @InsertOne("influencers")
-	    @Post("")
-	    insertUser(
-		    @UseModel(UserDto)
-		    user:  UserDto
-	    )  {
-		    return  {
-			    document:  {
-				    name: user.name,
-				    age: user.age,
-				    address: user.address,
-			    },
-		    };
-	    }
-    }
-    
-    export  default UserController;
+@Controller("user")
+class  UserController  {
+	@InsertOne("influencers")
+	@Post("")
+	insertUser(
+		@UseModel(UserDto)
+		user:  UserDto
+	)  {
+		return  {
+			document:  {
+				name: user.name,
+				age: user.age,
+				address: user.address,
+			},
+		};
+	}
+}
+
+export  default UserController;
+```
 
 ## Extends AWS CDK
 Create your `cdk.json`
