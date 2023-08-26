@@ -1,6 +1,10 @@
 <p align="center">
-    <img src="https://user-images.githubusercontent.com/72879799/153904003-d7dee710-6552-4d23-a803-7a9a0ba67d92.png#gh-dark-mode-only" width="320" alt="NovaJS Logo" />
-    <img src="https://user-images.githubusercontent.com/72879799/153904095-9d78a019-8495-4035-8174-e3da8e4dd66b.png#gh-light-mode-only" width="320" alt="NovaJS Logo" />
+
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://pkhadson.s3.sa-east-1.amazonaws.com/nova-light.png">
+    <img alt="NovaJS Logo" src="https://pkhadson.s3.sa-east-1.amazonaws.com/nova-dark.png">
+  </picture>
+
 </p>
 
   <p align="center">NovaJS is a new nodejs package for serverless API</p>
