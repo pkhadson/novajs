@@ -62,7 +62,8 @@ const genericAction = (actionName: string, opts?: IOpts) => {
       params.dataSource = atlasConfig.dataSource;
       Object.assign(params, fnResult);
       if (opts?.collection) params.collection = opts.collection;
-      if (!actionName.startsWith("insert")) params.filter = response;
+      if (!actionName.startsWith("insert") && response)
+        params.filter = response;
       if (opts?.emit) {
         params.url = url;
         params.apiKey = atlasConfig.apiKey;

@@ -1,15 +1,13 @@
-import { IApplicationParams } from "./interfaces/application.interface";
-import { Environment, App, Stack } from "aws-cdk-lib";
-import { Routes } from "./interfaces/route.interface";
-import { RouteResourceFactory } from "./factories/route-resource.factory";
+import { App, Environment, Stack } from "aws-cdk-lib";
 import {
-  RestApi,
-  Resource,
-  AwsIntegration,
-  HttpIntegration,
   Model,
   RequestValidator,
+  Resource,
+  RestApi,
 } from "aws-cdk-lib/aws-apigateway";
+import { RouteResourceFactory } from "./factories/route-resource.factory";
+import { IApplicationParams } from "./interfaces/application.interface";
+import { Routes } from "./interfaces/route.interface";
 import getResource from "./utils/getResource.util";
 
 const app = new App();
@@ -67,22 +65,46 @@ class Application {
 
       const name = `${controller}_${route.fn}`;
 
-      const model = this.getModel(
-        Reflect.get(controller, `schema_${route.fn}`)
-      );
+      const methodOptions: any = {};
+
+      const schema = Reflect.get(controller, `schema_${route.fn}`);
+      const query = Reflect.get(controller, `query_${route.fn}`);
+
+      if (schema || query) {
+        const validatorOptions: any = {
+          restApi: this.api,
+          validateRequestBody: true,
+        };
+
+        if (schema) {
+          const model = this.getModel(
+            Reflect.get(controller, `schema_${route.fn}`)
+          );
+
+          validatorOptions.requestValidatorName = model.modelId;
+
+          methodOptions.requestModels = {
+            "application/json": model,
+          };
+        }
+
+        if (query) {
+          methodOptions.requestParameters = {
+            "method.request.querystring.email": true,
+          };
+          validatorOptions.validateRequestParameters = true;
+        }
+
+        methodOptions.requestValidator = new RequestValidator(
+          this.api,
+          name,
+          validatorOptions
+        );
+      }
 
       if (integration)
         resource
-          .addMethod(route.method, integration, {
-            requestValidator: new RequestValidator(this.api, name, {
-              restApi: this.api,
-              requestValidatorName: model.modelId,
-              validateRequestBody: true,
-            }),
-            requestModels: {
-              "application/json": model,
-            },
-          })
+          .addMethod(route.method, integration, methodOptions)
           .addMethodResponse({
             statusCode: "200",
           });
