@@ -45,10 +45,7 @@ const genericAction = (actionName: string, opts?: IOpts) => {
   return function (target: any, ctx: any, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
     descriptor.value = function (...args: any[]) {
-      const fnResult = originalMethod.apply(this, args);
-
-      const response = fnResult.response;
-      delete fnResult.response;
+      const response = originalMethod.apply(this, args);
 
       const atlasConfig = Reflect.get(
         globalThis,
@@ -60,7 +57,7 @@ const genericAction = (actionName: string, opts?: IOpts) => {
       const params: any = {};
       params.database = atlasConfig.database;
       params.dataSource = atlasConfig.dataSource;
-      Object.assign(params, fnResult);
+      Object.assign(params, response);
       if (opts?.collection) params.collection = opts.collection;
       if (!actionName.startsWith("insert") && response)
         params.filter = response;
