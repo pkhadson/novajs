@@ -6,8 +6,8 @@ const getResource = (resource: Resource, route: string): Resource => {
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
     if (!part) continue;
-    if (currentResource.getResource(part)) currentResource.getResource(part);
-    else currentResource = currentResource.addResource(part);
+    const existingResource = currentResource.getResource(part) as Resource;
+    currentResource = existingResource || currentResource.addResource(part);
   }
 
   return currentResource;

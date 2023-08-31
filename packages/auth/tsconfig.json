@@ -11,12 +11,9 @@
     "declaration": true,
 
     "alwaysStrict": true,
-
-    // "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-
     "incremental": true,
-    "lib": ["es2022", "dom"],
+    "lib": ["es2020", "dom"],
     "noFallthroughCasesInSwitch": true,
     // "noImplicitAny": true,
     // "noImplicitReturns": true,
@@ -28,11 +25,6 @@
     "strictPropertyInitialization": true,
     "stripInternal": false,
     "composite": false,
-    "tsBuildInfoFile": "tsconfig.dev.tsbuildinfo",
-    "paths": {
-      "shared/*": ["../../shared/*"]
-    }
-  },
-
-  "include": ["./src/**/*", "../../shared/**/*"]
+    "tsBuildInfoFile": "tsconfig.dev.tsbuildinfo"
+  }
 }

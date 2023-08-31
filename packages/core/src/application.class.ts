@@ -1,13 +1,19 @@
 import { App, Environment, Stack } from "aws-cdk-lib";
 import {
+  AuthorizationType,
+  CfnAuthorizer,
+  Cors,
+  MethodOptions,
   Model,
   RequestValidator,
   Resource,
   RestApi,
+  RestApiProps,
 } from "aws-cdk-lib/aws-apigateway";
 import { RouteResourceFactory } from "./factories/route-resource.factory";
 import { IApplicationParams } from "./interfaces/application.interface";
 import { Routes } from "./interfaces/route.interface";
+import { Mutable } from "@jsnova/utils";
 import getResource from "./utils/getResource.util";
 
 const app = new App();
@@ -23,13 +29,29 @@ class Application {
     this.env();
     this.app = app;
 
-    this.api = new RestApi(
-      mainStack,
-      params.name || "NovaJsApi",
-      params.apiOptions
-    );
+    const paramsApi: Mutable<RestApiProps> = params.apiOptions || {};
+
+    if (params.cors)
+      paramsApi.defaultCorsPreflightOptions = {
+        allowHeaders: [
+          "Content-Type",
+          "X-Amz-Date",
+          "Authorization",
+          "X-Api-Key",
+          "Access-Control-Allow-Credentials",
+          "Access-Control-Allow-Headers",
+          "Impersonating-User-Sub",
+        ],
+        allowMethods: ["OPTIONS", "GET", "POST", "PUT", "PATCH", "DELETE"],
+        allowCredentials: true,
+        allowOrigins: this.getCors(),
+      };
+
+    this.api = new RestApi(mainStack, params.name || "NovaJsApi", paramsApi);
 
     Reflect.set(globalThis, "api", this.api);
+
+    this.registerUses();
 
     for (let i = 0; i < params.controllers.length; i++) {
       this.registerController(params.controllers[i]);
@@ -65,7 +87,9 @@ class Application {
 
       const name = `${controller}_${route.fn}`;
 
-      const methodOptions: any = {};
+      const methodOptions: Mutable<MethodOptions> = {};
+
+      // Registring schema and query validators
 
       const schema = Reflect.get(controller, `schema_${route.fn}`);
       const query = Reflect.get(controller, `query_${route.fn}`);
@@ -102,12 +126,36 @@ class Application {
         );
       }
 
-      if (integration)
+      // Registring authorizer
+
+      const authorizer = Reflect.get(
+        controller.constructor,
+        `authorizer_fn_${route.fn}`
+      );
+
+      if (authorizer && typeof authorizer === "function") {
+        const { authorizer: authorizerCfn } = authorizer() as {
+          authorizer: CfnAuthorizer;
+        };
+
+        methodOptions.authorizer = {
+          authorizerId: authorizerCfn.ref,
+        };
+
+        if (authorizerCfn.type === "COGNITO_USER_POOLS")
+          methodOptions.authorizationType = AuthorizationType.COGNITO;
+
+        if (authorizerCfn.type === "TOKEN")
+          methodOptions.authorizationType = AuthorizationType.CUSTOM;
+      }
+
+      if (integration) {
         resource
           .addMethod(route.method, integration, methodOptions)
           .addMethodResponse({
             statusCode: "200",
           });
+      }
     }
   }
 
@@ -127,6 +175,20 @@ class Application {
     //   proxy: true,
     // });
     // this.api.root.getResource("user")?.addMethod("GET", integration);
+  }
+
+  getCors(): string[] {
+    if (this.params.cors === true) return Cors.ALL_ORIGINS;
+    if (typeof this.params.cors === "string") return [this.params.cors];
+    return this.params.cors || [];
+  }
+
+  registerUses() {
+    const uses = this.params.use || [];
+    for (let i = 0; i < uses.length; i++) {
+      const use = uses[i];
+      if (use && typeof use === "function") use(this);
+    }
   }
 }
 
