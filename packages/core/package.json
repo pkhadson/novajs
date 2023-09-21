@@ -12,11 +12,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@jsnova/utils": "link:../utils",
     "aws-cdk-lib": "^2.88.0",
-    "typescript": "^5.1.6",
-    "@jsnova/utils": "link:../utils"
+    "pino": "^8.15.0",
+    "typescript": "^5.1.6"
   },
   "files": [
     "dist"
-  ]
+  ],
+  "devDependencies": {
+    "@types/node": "^20.6.1"
+  }
 }

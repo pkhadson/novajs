@@ -4,4 +4,5 @@ export interface IAtlasConfig {
   apiKey: string;
   appId: string;
   region: string;
+  eventBusSource?: string;
 }

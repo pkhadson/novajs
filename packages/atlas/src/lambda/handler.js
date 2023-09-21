@@ -134,11 +134,13 @@ var __generator =
   };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handler = void 0;
+var SNS = require("@aws-sdk/client-sns");
+var snsClient = new SNS.SNSClient();
 var handler = function (event) {
   return __awaiter(void 0, void 0, void 0, function () {
-    var url, data, res, body, response;
-    return __generator(this, function (_a) {
-      switch (_a.label) {
+    var url, data, res, body, _a, _b, response;
+    return __generator(this, function (_c) {
+      switch (_c.label) {
         case 0:
           url = event.url;
           data = Object.assign({}, event);
@@ -156,10 +158,31 @@ var handler = function (event) {
             }),
           ];
         case 1:
-          res = _a.sent();
+          res = _c.sent();
           return [4 /*yield*/, res.text()];
         case 2:
-          body = _a.sent();
+          body = _c.sent();
+          if (!process.env.SNS_ARN) return [3 /*break*/, 4];
+          _b = (_a = console).log;
+          return [
+            4 /*yield*/,
+            snsClient.send(
+              new SNS.PublishCommand({
+                Message: body,
+                TopicArn: process.env.SNS_ARN,
+                MessageAttributes: {
+                  subject: {
+                    DataType: "String",
+                    StringValue: "influencers.created",
+                  },
+                },
+              })
+            ),
+          ];
+        case 3:
+          _b.apply(_a, [_c.sent()]);
+          _c.label = 4;
+        case 4:
           response = {
             statusCode: 200,
             headers: {

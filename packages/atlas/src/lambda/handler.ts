@@ -1,3 +1,7 @@
+import * as SNS from "@aws-sdk/client-sns";
+
+const snsClient = new SNS.SNSClient();
+
 interface IOptsAtlasHandler {
   database: string;
   dataSource: string;
@@ -23,7 +27,22 @@ export const handler = async (event: IOptsAtlasHandler) => {
       "Content-Type": "application/json",
     },
   });
+
   const body = await res.text();
+
+  if (process.env.SNS_ARN)
+    await snsClient.send(
+      new SNS.PublishCommand({
+        Message: body,
+        TopicArn: process.env.SNS_ARN,
+        MessageAttributes: {
+          subject: {
+            DataType: "String",
+            StringValue: "influencers.created",
+          },
+        },
+      })
+    );
   const response = {
     statusCode: 200,
     headers: {

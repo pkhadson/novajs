@@ -3,9 +3,12 @@ import {
   AuthorizationType,
   CfnAuthorizer,
   Cors,
+  Integration,
+  LambdaIntegration,
   MethodOptions,
   Model,
   RequestValidator,
+  RequestValidatorProps,
   Resource,
   RestApi,
   RestApiProps,
@@ -15,15 +18,23 @@ import { IApplicationParams } from "./interfaces/application.interface";
 import { Routes } from "./interfaces/route.interface";
 import { Mutable } from "@jsnova/utils";
 import getResource from "./utils/getResource.util";
+import { Function } from "aws-cdk-lib/aws-lambda";
+import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
+import { Queue } from "aws-cdk-lib/aws-sqs";
+import logger from "./logger";
+import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
+import { Rule } from "aws-cdk-lib/aws-events";
 
 const app = new App();
 const mainStack = new Stack(app, "NovaJsStack");
 Reflect.set(globalThis, "app", app);
+Reflect.set(globalThis, "mainStack", mainStack);
 
 class Application {
   app: App;
   api: RestApi;
   models: Record<string, Model> = {};
+  methods: Map<string, Integration> = new Map();
 
   constructor(private params: IApplicationParams) {
     this.env();
@@ -73,6 +84,7 @@ class Application {
     );
 
     this.registerIntegrations(controllerInstance);
+    this.registerEvents(controllerInstance);
 
     RouteResourceFactory(controllerResource, routes);
   }
@@ -82,10 +94,10 @@ class Application {
     const controllerResource: Resource = Reflect.get(controller, "resource");
     for (let i = 0; i < routes.length; i++) {
       const route = routes[i];
-      const integration = controller[route.fn]();
+      const integration = this.getMethodResponse(controller, route.fn);
       const resource = getResource(controllerResource, route.route);
 
-      const name = `${controller}_${route.fn}`;
+      const name = `${controller.constructor.name}_${route.fn}`;
 
       const methodOptions: Mutable<MethodOptions> = {};
 
@@ -95,8 +107,10 @@ class Application {
       const query = Reflect.get(controller, `query_${route.fn}`);
 
       if (schema || query) {
-        const validatorOptions: any = {
+        const validatorName = `validator_${name}`;
+        const validatorOptions: Mutable<RequestValidatorProps> = {
           restApi: this.api,
+          requestValidatorName: validatorName,
           validateRequestBody: true,
         };
 
@@ -105,7 +119,7 @@ class Application {
             Reflect.get(controller, `schema_${route.fn}`)
           );
 
-          validatorOptions.requestValidatorName = model.modelId;
+          validatorOptions.requestValidatorName = validatorName;
 
           methodOptions.requestModels = {
             "application/json": model,
@@ -121,9 +135,11 @@ class Application {
 
         methodOptions.requestValidator = new RequestValidator(
           this.api,
-          name,
+          validatorName,
           validatorOptions
         );
+
+        methodOptions.requestValidatorOptions;
       }
 
       // Registring authorizer
@@ -159,8 +175,54 @@ class Application {
     }
   }
 
+  private registerEvents(controller: any) {
+    const controllerPrototype = Object.getPrototypeOf(controller);
+
+    // the line below get all method name from the class
+    const methods = Object.getOwnPropertyNames(controllerPrototype);
+    for (let i = 0; i < methods.length; i++) {
+      if (
+        methods[i] === "constructor" ||
+        typeof controller[methods[i]] !== "function"
+      )
+        continue;
+      const methodName = methods[i];
+      const method = controller[methodName];
+      let functionLambda: any = this.getMethodResponse(controller, methodName);
+      functionLambda = functionLambda.handler as Function;
+      if (!functionLambda) continue;
+
+      if (Reflect.has(controller, `sqs_${methodName}`)) {
+        logger.debug(`Registering SQS for ${methodName}`);
+
+        const sqs = Reflect.get(controller, `sqs_${methodName}`) as Queue[];
+
+        for (let j = 0; j < sqs.length; j++) {
+          functionLambda.addEventSource(
+            new SqsEventSource(sqs[j], {
+              batchSize: 10,
+            })
+          );
+        }
+      }
+      if (Reflect.has(controller, `rules_${methodName}`)) {
+        logger.debug(`Registering Rules for ${methodName}`);
+        const rules = Reflect.get(controller, `rules_${methodName}`) as Rule[];
+
+        const target = new LambdaFunction(functionLambda);
+
+        for (let j = 0; j < rules.length; j++) {
+          const rule = rules[j];
+          rule.addTarget(target);
+        }
+      }
+    }
+  }
+
   getModel(schema: any): Model {
     if (this.models[schema.title]) return this.models[schema.title];
+
+    require("fs").writeFileSync("/tmp/a.log", "=== MODEL\n", { flag: "a+" });
     const validator = new Model(this.api, schema.title, {
       restApi: this.api,
       schema,
@@ -189,6 +251,17 @@ class Application {
       const use = uses[i];
       if (use && typeof use === "function") use(this);
     }
+  }
+
+  getMethodResponse(controller: any, methodName: string): Integration {
+    const name = `${
+      controller.constructor.name || controller.name || controller
+    }_${methodName}`;
+
+    if (this.methods.has(name)) return this.methods.get(name)!;
+    const method = controller[methodName]();
+    this.methods.set(name, method);
+    return method;
   }
 }
 
